@@ -1,0 +1,22 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {"url": "data/opt125m_out_range.csv"},
+  "mark": "rect",
+  "encoding": {
+    "column": {
+      "field": "project",
+      "sort": ["opt125m", "opt300m", "opt1.3b", "opt2.7b"]
+    },
+    "x": {"field": "min_value", "type": "quantitative"},
+    "x2": {"field": "max_value"},
+    "y": {"field": "layer", "type": "ordinal"},
+    "yOffset": {"field": "run"},
+    "color": {"field": "run"},
+    "tooltip": [
+      {"field": "min_value", "type": "quantitative"},
+      {"field": "max_value", "type": "quantitative"},
+      {"field": "layer", "type": "ordinal"},
+      {"field": "run", "type": "nominal"}
+    ]
+  }
+}
