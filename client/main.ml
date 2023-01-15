@@ -1,41 +1,56 @@
-open! Core
+open! Base
 open! Bonsai
 open! Bonsai_web
 open! Async_kernel
 open! Async_js
 
-type v =
-  | A
-  | B of string
-  | C of string
-[@@deriving typed_variants, sexp_of]
+module M = struct
+  type t =
+    { error : Error.t option
+    ; spec : string option
+    ; images : string list option
+    }
+  [@@deriving sexp, equal]
+
+  let default = { error = None; spec = None; images = None }
+end
+
+module V = struct
+  type t =
+    | Opt125m_output_range
+    | B of string
+    | C of string
+  [@@deriving typed_variants, sexp, equal]
+end
 
 module Form = Bonsai_web_ui_form
 
 module Action = struct
-  type t =
-    | Spec of string (* JSOO - vegaEmbed *)
-    (* | Image *)
+  type t = Spec of string
+  (* JSOO - vegaEmbed *)
+  (* | Image *)
   [@@deriving sexp_of]
 end
 
-let handle_dd_change inject _ev _s =
+let fetch_spec inject =
   let open Effect.Let_syntax in
   let%bind response = Effect.of_deferred_fun (fun p -> Async_js.Http.get p) "/spec" in
   inject (Action.Spec (Or_error.ok_exn response))
 ;;
 
-let form_of_v (inject : (Action.t -> unit Effect.t) Value.t) : v Form.t Computation.t =
+let handle_dd_change inject _ev _s = fetch_spec inject
+
+let form_of_v (inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Computation.t =
   Form.Typed.Variant.make
     (module struct
       (* reimport the module that typed_fields just derived *)
-      module Typed_variant = Typed_variant_of_v
+      module Typed_variant = V.Typed_variant
 
       (* let label_for_variant = `Inferred *)
       (* provide a form computation for constructor in the variant *)
       let form_for_variant : type a. a Typed_variant.t -> a Form.t Computation.t
         = function
-        | A -> Bonsai.const (Form.return ())
+        | Opt125m_output_range -> Bonsai.const (Form.return ())
         | B ->
           Form.Elements.Dropdown.list
             [%here]
@@ -55,13 +70,12 @@ let view_of_form : Vdom.Node.t Computation.t =
   let%sub state, inject =
     Bonsai.state_machine0
       [%here]
-      (module String)
+      (module M)
       (module Action)
-      ~default_model:""
-      ~apply_action:(fun ~inject:_ ~schedule_event:_ _model action ->
+      ~default_model:M.default
+      ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
         match action with
-        | Spec s -> s)
-        (* | Image -> "") *)
+        | Spec s -> { model with spec = Some s })
   in
   let%sub form_v = form_of_v inject in
   let%arr form_v = form_v
@@ -69,8 +83,8 @@ let view_of_form : Vdom.Node.t Computation.t =
   let value = Form.value form_v in
   Vdom.Node.div
     [ Form.view_as_vdom form_v
-    ; Vdom.Node.sexp_for_debugging ([%sexp_of: v Or_error.t] value)
-    ; Vdom.Node.text state
+    ; Vdom.Node.sexp_for_debugging ([%sexp_of: V.t Or_error.t] value)
+    ; Vdom.Node.text (Sexp.to_string (M.sexp_of_t state))
     ]
 ;;
 
