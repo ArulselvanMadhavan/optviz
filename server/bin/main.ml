@@ -29,27 +29,27 @@ let html =
 
 let read_file filename = Stdlib.In_channel.with_open_text filename In_channel.input_all
 
-let body spec =
-  {|<body
-     <div id="app"></div>
-     <div id="vis"></div>
-     <script>vegaEmbed("#vis",|}
-  ^ spec
-  ^ {|);</script>
-   </body>|}
-;;
+(* let body spec = *)
+(*   {|<body *)
+(*      <div id="app"></div> *)
+(*      <div id="vis"></div> *)
+(*      <script>vegaEmbed("#vis",|} *)
+(*   ^ spec *)
+(*   ^ {|);</script> *)
+(*    </body>|} *)
+(* ;; *)
 
-let head =
-  {|
-    <head>
-<script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
-<script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
-<script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
-    </head> 
-|}
-;;
+(* let head = *)
+(*   {| *)
+(*     <head> *)
+(* <script src="https://cdn.jsdelivr.net/npm/vega@5"></script> *)
+(* <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script> *)
+(* <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script> *)
+(*     </head>  *)
+(* |} *)
+(* ;; *)
 
-let gen_html spec = "<html>" ^ head ^ body spec ^ "</html>"
+(* let gen_html spec = "<html>" ^ head ^ body spec ^ "</html>" *)
 let csv_pattern = Base.String.Search_pattern.create ~case_sensitive:false "csv"
 
 let server ~port =
@@ -64,12 +64,12 @@ let server ~port =
         ~status:`OK
         ~body:Embedded_files.main_dot_bc_dot_js
         ()
-    | "/opt125m_out_range.html" ->
+    | "/spec" ->
       let _ = Base.String.Search_pattern.matches csv_pattern uri in
       respond_string
-        ~content_type:"text/html"
+        ~content_type:"application/json"
         ~status:`OK
-        ~body:(read_file "recipe/opt125m_out_range.vg.json" |> gen_html)
+        ~body:(read_file "recipe/opt125m_out_range.vg.json")
         ()
     | _ ->
       if Base.String.Search_pattern.matches csv_pattern uri

@@ -1,27 +1,50 @@
 open! Core
+open! Bonsai
 open! Bonsai_web
+open! Async_kernel
+open! Async_js
 
 type v =
   | A
-  | B of int
+  | B of string
   | C of string
 [@@deriving typed_variants, sexp_of]
 
 module Form = Bonsai_web_ui_form
 
-let form_of_v : v Form.t Computation.t =
+module Action = struct
+  type t =
+    | Spec of string (* JSOO - vegaEmbed *)
+    (* | Image *)
+  [@@deriving sexp_of]
+end
+
+let handle_dd_change inject _ev _s =
+  let open Effect.Let_syntax in
+  let%bind response = Effect.of_deferred_fun (fun p -> Async_js.Http.get p) "/spec" in
+  inject (Action.Spec (Or_error.ok_exn response))
+;;
+
+let form_of_v (inject : (Action.t -> unit Effect.t) Value.t) : v Form.t Computation.t =
   Form.Typed.Variant.make
     (module struct
       (* reimport the module that typed_fields just derived *)
       module Typed_variant = Typed_variant_of_v
 
       (* let label_for_variant = `Inferred *)
-
       (* provide a form computation for constructor in the variant *)
       let form_for_variant : type a. a Typed_variant.t -> a Form.t Computation.t
         = function
         | A -> Bonsai.const (Form.return ())
-        | B -> Form.Elements.Textbox.int [%here]
+        | B ->
+          Form.Elements.Dropdown.list
+            [%here]
+            ~extra_attrs:
+              (Value.map inject ~f:(fun inject ->
+                 [ Vdom.Attr.on_change (handle_dd_change inject) ]))
+            (module String)
+            (Value.return [ "hello"; "world"; "arul" ])
+            ~init:`First_item
         | C -> Form.Elements.Textbox.string [%here]
       ;;
     end)
@@ -29,12 +52,25 @@ let form_of_v : v Form.t Computation.t =
 
 let view_of_form : Vdom.Node.t Computation.t =
   let open! Bonsai.Let_syntax in
-  let%sub form_v = form_of_v in
-  let%arr form_v = form_v in
+  let%sub state, inject =
+    Bonsai.state_machine0
+      [%here]
+      (module String)
+      (module Action)
+      ~default_model:""
+      ~apply_action:(fun ~inject:_ ~schedule_event:_ _model action ->
+        match action with
+        | Spec s -> s)
+        (* | Image -> "") *)
+  in
+  let%sub form_v = form_of_v inject in
+  let%arr form_v = form_v
+  and state = state in
   let value = Form.value form_v in
   Vdom.Node.div
     [ Form.view_as_vdom form_v
     ; Vdom.Node.sexp_for_debugging ([%sexp_of: v Or_error.t] value)
+    ; Vdom.Node.text state
     ]
 ;;
 
