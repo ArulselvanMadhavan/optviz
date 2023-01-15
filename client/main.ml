@@ -3,6 +3,7 @@ open! Bonsai
 open! Bonsai_web
 open! Async_kernel
 open! Async_js
+open! Js_of_ocaml
 
 module M = struct
   type t =
@@ -39,6 +40,19 @@ let fetch_spec inject =
 ;;
 
 let handle_dd_change inject _ev _s = fetch_spec inject
+
+let handle_spec_change (state : M.t) _ev =
+  Option.iter state.spec ~f:(fun s ->
+    let json_spec =
+      Js.Unsafe.fun_call
+        (Js.Unsafe.js_expr "JSON.parse")
+        [| Js.Unsafe.inject (Js.string s) |]
+    in
+    Js.Unsafe.fun_call
+      (Js.Unsafe.js_expr "vegaEmbed")
+      [| Js.Unsafe.inject (Js.string "#viz"); json_spec |]);
+  Effect.Ignore
+;;
 
 let form_of_v (inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Computation.t =
   Form.Typed.Variant.make
@@ -78,6 +92,7 @@ let view_of_form : Vdom.Node.t Computation.t =
         | Spec s -> { model with spec = Some s })
   in
   let%sub form_v = form_of_v inject in
+  (* let%sub () = Form.Dynamic.on_change (module M) form_v ~f:handle_form_change in *)
   let%arr form_v = form_v
   and state = state in
   let value = Form.value form_v in
@@ -85,6 +100,10 @@ let view_of_form : Vdom.Node.t Computation.t =
     [ Form.view_as_vdom form_v
     ; Vdom.Node.sexp_for_debugging ([%sexp_of: V.t Or_error.t] value)
     ; Vdom.Node.text (Sexp.to_string (M.sexp_of_t state))
+    ; Vdom.Node.button
+        ~key:"viz"
+        ~attr:(Vdom.Attr.many [ Vdom.Attr.on_click (handle_spec_change state) ])
+        [ Vdom.Node.text "Load Viz" ]
     ]
 ;;
 

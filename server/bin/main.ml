@@ -17,11 +17,15 @@ let html =
 <!DOCTYPE html>
 <html lang="en">
     <head>
+  <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
       <script type="text/javascript" src="main.js"></script>
     </head>
     <body>
       <h1>OPT visualizations</h1>
       <div id="app"></div>
+      <div id="viz"></div>
     </body>
 </html>
 |}
