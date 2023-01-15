@@ -21,6 +21,7 @@ let html =
     </head>
     <body>
       <h1>OPT visualizations</h1>
+      <div id="app"></div>
     </body>
 </html>
 |}
@@ -30,6 +31,7 @@ let read_file filename = Stdlib.In_channel.with_open_text filename In_channel.in
 
 let body spec =
   {|<body
+     <div id="app"></div>
      <div id="vis"></div>
      <script>vegaEmbed("#vis",|}
   ^ spec
@@ -67,7 +69,7 @@ let server ~port =
       respond_string
         ~content_type:"text/html"
         ~status:`OK
-        ~body:(read_file "recipe/opt125m_out_range.vl.json" |> gen_html)
+        ~body:(read_file "recipe/opt125m_out_range.vg.json" |> gen_html)
         ()
     | _ ->
       if Base.String.Search_pattern.matches csv_pattern uri

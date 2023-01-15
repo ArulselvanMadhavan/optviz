@@ -1,6 +1,6 @@
 (executables
  (names main)
  (modes js)
+ (libraries bonsai bonsai.web_ui_form)
  (preprocess
-  (pps js_of_ocaml-ppx))
- (libraries js_of_ocaml))
+  (pps ppx_jane ppx_typed_fields)))

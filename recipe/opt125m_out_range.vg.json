@@ -1,6 +1,12 @@
 {
   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-  "data": {"url": "data/opt125m_out_range.csv"},
+  "data": {
+    "url": "data/opt125m_out_range.csv",
+    "format": {
+      "type": "csv",
+      "parse": {"min_value": "number", "max_value": "number"}
+    }
+  },
   "mark": "rect",
   "encoding": {
     "column": {
