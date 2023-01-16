@@ -9,11 +9,12 @@ module M = struct
   type t =
     { error : Error.t option
     ; spec : string option
-    ; images : string list option
+    ; images : string list
+    ; show_images : bool
     }
   [@@deriving sexp, equal]
 
-  let default = { error = None; spec = None; images = None }
+  let default = { error = None; spec = None; images = []; show_images = false }
 end
 
 module V = struct
@@ -29,6 +30,7 @@ module Form = Bonsai_web_ui_form
 module Action = struct
   type t =
     | Spec of string option
+    | Images of string list
     | Error of Error.t option
   (* JSOO - vegaEmbed *)
   (* | Image *)
@@ -64,16 +66,11 @@ let fetch_spec inject s =
     inject (Action.Spec (Some spec)))
 ;;
 
-(* let handle_dd_change inject _ev s = fetch_spec inject s *)
-
 let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Computation.t =
   Form.Typed.Variant.make
     (module struct
-      (* reimport the module that typed_fields just derived *)
       module Typed_variant = V.Typed_variant
 
-      (* let label_for_variant = `Inferred *)
-      (* provide a form computation for constructor in the variant *)
       let form_for_variant : type a. a Typed_variant.t -> a Form.t Computation.t
         = function
         | Opt125m_output_range -> Bonsai.const (Form.return ())
@@ -82,8 +79,7 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
           Form.Elements.Multiselect.list
             [%here]
             (module String)
-            (Value.return [ "test" ])
-            ~extra_attrs:(Value.return [ Vdom.Attr.on_change ])
+            (Value.return [ "model.decoder.layers.4.self_attn.v_proj" ])
       ;;
     end)
 ;;
@@ -97,11 +93,12 @@ let handle_v_change inject = function
     fetch_spec
       inject
       (Base.String.lowercase (Sexp.to_string (V.sexp_of_t V.Opt_all_output_range)))
-  | _ -> Vdom.Effect.return ()
+  | V.Opt125m_heatmap_sensitive_layers selected ->
+    handle_spec_change "{}";
+    inject (Images selected)
 ;;
 
-(* let handle_form_change form_v (inject : (Action.t -> unit Effect.t) Value.t) = *)
-(*   let open! Bonsai.Let_syntax in *)
+let build_image_path layer_name = "data/opt125m/heatmap/images/" ^ layer_name ^ ".png"
 
 let view_of_form : Vdom.Node.t Computation.t =
   let open! Bonsai.Let_syntax in
@@ -114,6 +111,7 @@ let view_of_form : Vdom.Node.t Computation.t =
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
         match action with
         | Spec s -> { model with spec = s }
+        | Images xs -> { model with images = xs; show_images = true }
         | Error e -> { model with error = e })
   in
   let%sub form_v = form_of_v inject in
@@ -127,17 +125,22 @@ let view_of_form : Vdom.Node.t Computation.t =
   and state = state in
   (* and inject = inject in *)
   let value = Form.value form_v in
-  (* let f = handle_v_change state in *)
+  let images =
+    if state.show_images
+    then
+      List.map state.images ~f:(fun layer_name ->
+        Vdom.Node.create
+          "img"
+          ~attr:(Vdom.Attr.many [ Vdom.Attr.src (build_image_path layer_name) ])
+          [])
+    else []
+  in
   Vdom.Node.div
-    [ Form.view_as_vdom form_v
-      (* ; Vdom.Node.select ~attr:(Vdom.Attr.many [Vdom.Attr.on_change (handle_dd_change inject)]) *)
-    ; Vdom.Node.sexp_for_debugging ([%sexp_of: V.t Or_error.t] value)
-    ; Vdom.Node.text (Sexp.to_string (M.sexp_of_t state))
-      (* ; Vdom.Node.button *)
-      (*     ~key:"viz" *)
-      (*     ~attr:(Vdom.Attr.many [ Vdom.Attr.on_click (handle_spec_change state) ]) *)
-      (*     [ Vdom.Node.text "Load Viz" ] *)
-    ]
+    ([ Form.view_as_vdom form_v
+     ; Vdom.Node.sexp_for_debugging ([%sexp_of: V.t Or_error.t] value)
+       (* ; Vdom.Node.text (Sexp.to_string (M.sexp_of_t state)) *)
+     ]
+    @ images)
 ;;
 
 let (_ : _ Start.Handle.t) =
