@@ -1,7 +1,7 @@
 (executable
  (name main)
  (public_name optviz)
- (libraries cohttp-lwt-unix conduit-lwt core cohttp-async))
+ (libraries cohttp-lwt-unix conduit-lwt cohttp-async))
 
 (rule
  (targets embedded_files.ml embedded_files.mli)
