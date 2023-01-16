@@ -1,0 +1,73 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "data": [
+    {
+      "name": "source_0",
+      "url": "data/opt125m_channel_heatmap.csv",
+      "format": {
+        "type": "csv",
+        "parse": {
+          "token_id": "number",
+          "channel_id": "number",
+          "raw_value": "number"
+        }
+      }
+    }
+  ],
+  "width": 800,
+  "height": 800,
+  "scales": [
+    {
+      "name": "x",
+      "type": "linear",
+      "domain": {"data": "source_0", "field": "channel_id"},
+      "range": "width"
+    },
+    {
+      "name": "y",
+      "type": "band",
+      "domain": {"data": "source_0", "field": "token_id", "sort": true},
+      "reverse": true,
+      "range": "height"
+    },
+    {
+      "name": "color",
+      "type": "linear",
+      "range": {"scheme": "Turbo"},
+      "domain": {"data": "source_0", "field": "raw_value"},
+      "nice": true,
+      "zero": true,
+      "reverse": true
+    }
+  ],
+  "axes": [
+    {"orient": "bottom", "scale": "x", "domain": true, "title": "Channels"},
+    {
+      "orient": "left",
+      "scale": "y",
+      "domain": true,
+      "title": "Tokens(0 to 1023)",
+      "labels": false,
+      "ticks": false
+    }
+  ],
+  "legends": [{"fill": "color", "type": "gradient", "title": "Range"}],
+  "marks": [
+    {
+      "type": "rect",
+      "from": {"data": "source_0"},
+      "encode": {
+        "enter": {
+          "x": {"scale": "x", "field": "channel_id"},
+          "y": {"scale": "y", "field": "token_id"},
+          "width": {"value": 5},
+          "height": {"scale": "y", "band": 0.99},
+          "tooltip": {
+            "signal": "{\"channel_id\":datum.channel_id, \"token_id\":datum.token_id,\"abs_value\":datum.raw_value}"
+          }
+        },
+        "update": {"fill": {"scale": "color", "field": "raw_value"}}
+      }
+    }
+  ]
+}

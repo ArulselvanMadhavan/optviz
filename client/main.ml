@@ -20,7 +20,7 @@ module V = struct
   type t =
     | Opt125m_output_range
     | Opt_all_output_range
-    | C of string
+    | Opt125m_heatmap_sensitive_layers of string list
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -77,17 +77,13 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
       let form_for_variant : type a. a Typed_variant.t -> a Form.t Computation.t
         = function
         | Opt125m_output_range -> Bonsai.const (Form.return ())
-        | Opt_all_output_range ->
-          Bonsai.const (Form.return ())
-          (* Form.Elements.Dropdown.list *)
-          (*   [%here] *)
-          (*   ~extra_attrs: *)
-          (*     (Value.map inject ~f:(fun inject -> *)
-          (*        [ Vdom.Attr.on_change (handle_dd_change inject) ])) *)
-          (*   (module String) *)
-          (*   (Value.return [ "hello"; "world"; "arul" ]) *)
-          (*   ~init:`First_item *)
-        | C -> Form.Elements.Textbox.string [%here]
+        | Opt_all_output_range -> Bonsai.const (Form.return ())
+        | Opt125m_heatmap_sensitive_layers ->
+          Form.Elements.Multiselect.list
+            [%here]
+            (module String)
+            (Value.return [ "test" ])
+            ~extra_attrs:(Value.return [ Vdom.Attr.on_change ])
       ;;
     end)
 ;;
@@ -104,13 +100,8 @@ let handle_v_change inject = function
   | _ -> Vdom.Effect.return ()
 ;;
 
-let handle_form_change form_v (inject : (Action.t -> unit Effect.t) Value.t) =
-  let open! Bonsai.Let_syntax in
-  Form.Dynamic.on_change
-    (module V)
-    form_v
-    ~f:(Value.map inject ~f:(fun inject -> handle_v_change inject))
-;;
+(* let handle_form_change form_v (inject : (Action.t -> unit Effect.t) Value.t) = *)
+(*   let open! Bonsai.Let_syntax in *)
 
 let view_of_form : Vdom.Node.t Computation.t =
   let open! Bonsai.Let_syntax in
@@ -126,8 +117,12 @@ let view_of_form : Vdom.Node.t Computation.t =
         | Error e -> { model with error = e })
   in
   let%sub form_v = form_of_v inject in
-  let%sub () = handle_form_change form_v inject in
-  (* let%sub () = Form.Dynamic.on_change (module V) form_v ~f:(handle_v_change state) in *)
+  let%sub () =
+    Form.Dynamic.on_change
+      (module V)
+      form_v
+      ~f:(Value.map inject ~f:(fun inject -> handle_v_change inject))
+  in
   let%arr form_v = form_v
   and state = state in
   (* and inject = inject in *)
