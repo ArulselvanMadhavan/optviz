@@ -19,7 +19,7 @@ end
 module V = struct
   type t =
     | Opt125m_output_range
-    | B of string
+    | Opt_all_output_range
     | C of string
   [@@deriving typed_variants, sexp, equal]
 end
@@ -64,9 +64,9 @@ let fetch_spec inject s =
     inject (Action.Spec (Some spec)))
 ;;
 
-let handle_dd_change inject _ev s = fetch_spec inject s
+(* let handle_dd_change inject _ev s = fetch_spec inject s *)
 
-let form_of_v (inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Computation.t =
+let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Computation.t =
   Form.Typed.Variant.make
     (module struct
       (* reimport the module that typed_fields just derived *)
@@ -77,15 +77,16 @@ let form_of_v (inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Comput
       let form_for_variant : type a. a Typed_variant.t -> a Form.t Computation.t
         = function
         | Opt125m_output_range -> Bonsai.const (Form.return ())
-        | B ->
-          Form.Elements.Dropdown.list
-            [%here]
-            ~extra_attrs:
-              (Value.map inject ~f:(fun inject ->
-                 [ Vdom.Attr.on_change (handle_dd_change inject) ]))
-            (module String)
-            (Value.return [ "hello"; "world"; "arul" ])
-            ~init:`First_item
+        | Opt_all_output_range ->
+          Bonsai.const (Form.return ())
+          (* Form.Elements.Dropdown.list *)
+          (*   [%here] *)
+          (*   ~extra_attrs: *)
+          (*     (Value.map inject ~f:(fun inject -> *)
+          (*        [ Vdom.Attr.on_change (handle_dd_change inject) ])) *)
+          (*   (module String) *)
+          (*   (Value.return [ "hello"; "world"; "arul" ]) *)
+          (*   ~init:`First_item *)
         | C -> Form.Elements.Textbox.string [%here]
       ;;
     end)
@@ -96,6 +97,10 @@ let handle_v_change inject = function
     fetch_spec
       inject
       (Base.String.lowercase (Sexp.to_string (V.sexp_of_t V.Opt125m_output_range)))
+  | V.Opt_all_output_range ->
+    fetch_spec
+      inject
+      (Base.String.lowercase (Sexp.to_string (V.sexp_of_t V.Opt_all_output_range)))
   | _ -> Vdom.Effect.return ()
 ;;
 
