@@ -5,9 +5,15 @@
     "url": "data/opt_channel_max.csv",
     "name": "source"
   },
+  "transform": [
+    {
+      "aggregate": [{"op": "argmax", "field": "max_value", "as": "mvalue"}],
+      "groupby": ["project_name", "batch_id", "layer_name", "tensor_type"]
+    }
+  ],
   "facet": {
     "column": {
-      "field": "project_name",
+      "field": "mvalue.project_name",
       "sort": ["opt125m", "opt300m", "opt1.3b", "opt2.7b"]
     }
   },
@@ -16,22 +22,23 @@
     "mark": "circle",
     "encoding": {
       "size": {
-        "field": "max_value",
+        "field": "mvalue.max_value",
         "legend": null,
         "type": "quantitative"
       },
       "x": {
         "axis": {"grid": false},
-        "field": "channel_id",
+        "field": "mvalue.channel_id",
+        "aggregate": {"argmax": "mvalue"},
         "type": "quantitative",
         "title": "Channel Id with the max value"
       },
       "y": {"field": "layer_name", "type": "ordinal", "axis": {"grid": true}},
-      "color": {"field": "tensor_type", "type": "nominal"},
+      "color": {"field": "mvalue.tensor_type", "type": "nominal"},
       "tooltip": [
-        {"field": "max_value", "type": "quantitative"},
-        {"field": "channel_id", "type": "nominal"},
-        {"field": "tensor_type", "type": "nominal"},
+        {"field": "mvalue.max_value", "type": "quantitative"},
+        {"field": "mvalue.channel_id", "type": "nominal"},
+        {"field": "mvalue.tensor_type", "type": "nominal"},
         {"field": "layer_name", "type": "ordinal"}
       ]
     }
