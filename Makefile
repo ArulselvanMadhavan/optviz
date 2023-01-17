@@ -33,7 +33,7 @@ run:
 optviz:
 	sudo ${DC_RUN_VARS} ${DOCKER_COMPOSE_CMD} -f docker-compose.yml run --service-ports optviz bash
 
-.PHONY: diffusers-ocaml-rebuild
+.PHONY: optviz-rebuild
 optviz-rebuild:
 	sudo ${DC_RUN_VARS} ${DOCKER_COMPOSE_CMD} -f docker-compose.yml build
 
