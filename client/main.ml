@@ -33,8 +33,6 @@ module Action = struct
     | Spec of string option
     | Images of string list
     | Error of Error.t option
-  (* JSOO - vegaEmbed *)
-  (* | Image *)
   [@@deriving sexp_of]
 end
 
