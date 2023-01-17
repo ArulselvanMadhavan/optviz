@@ -79,7 +79,9 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
           Form.Elements.Multiselect.list
             [%here]
             (module String)
-            (Value.return [ "model.decoder.layers.4.self_attn.v_proj" ])
+            (Value.return [
+                "model.decoder.layers.1.fc1";"model.decoder.layers.8.self_attn.v_proj";"model.decoder.layers.9.self_attn.v_proj";"model.decoder.layers.7.self_attn.v_proj";"model.decoder.layers.11.self_attn.v_proj";"model.decoder.layers.4.self_attn.v_proj";"model.decoder.layers.10.self_attn.v_proj";"model.decoder.layers.6.self_attn.v_proj";"model.decoder.layers.2.fc1";"model.decoder.layers.1.fc2"
+              ])
       ;;
     end)
 ;;
