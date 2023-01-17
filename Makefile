@@ -11,6 +11,8 @@ DC_RUN_VARS := USER_NAME=${USER} \
 	MODELS_DIR=${MODELS_DIR} \
 	PORT=${PORT}
 
+DOCKER_COMPOSE_CMD := $(shell if docker compose version > /dev/null ; then echo "docker compose"; else echo "docker-compose"; fi)
+
 all:
 	@dune build @all
 
@@ -29,11 +31,11 @@ run:
 
 .PHONY: optviz
 optviz:
-	sudo ${DC_RUN_VARS} docker compose -f docker-compose.yml run --service-ports optviz bash
+	sudo ${DC_RUN_VARS} ${DOCKER_COMPOSE_CMD} -f docker-compose.yml run --service-ports optviz bash
 
 .PHONY: diffusers-ocaml-rebuild
 optviz-rebuild:
-	sudo ${DC_RUN_VARS} docker compose -f docker-compose.yml build
+	sudo ${DC_RUN_VARS} ${DOCKER_COMPOSE_CMD} -f docker-compose.yml build
 
 .PHONY: kill
 kill:
