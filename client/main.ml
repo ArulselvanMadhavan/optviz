@@ -79,9 +79,18 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
           Form.Elements.Multiselect.list
             [%here]
             (module String)
-            (Value.return [
-                "model.decoder.layers.1.fc1";"model.decoder.layers.8.self_attn.v_proj";"model.decoder.layers.9.self_attn.v_proj";"model.decoder.layers.7.self_attn.v_proj";"model.decoder.layers.11.self_attn.v_proj";"model.decoder.layers.4.self_attn.v_proj";"model.decoder.layers.10.self_attn.v_proj";"model.decoder.layers.6.self_attn.v_proj";"model.decoder.layers.2.fc1";"model.decoder.layers.1.fc2"
-              ])
+            (Value.return
+               [ "model.decoder.layers.1.fc1"
+               ; "model.decoder.layers.8.self_attn.v_proj"
+               ; "model.decoder.layers.9.self_attn.v_proj"
+               ; "model.decoder.layers.7.self_attn.v_proj"
+               ; "model.decoder.layers.11.self_attn.v_proj"
+               ; "model.decoder.layers.4.self_attn.v_proj"
+               ; "model.decoder.layers.10.self_attn.v_proj"
+               ; "model.decoder.layers.6.self_attn.v_proj"
+               ; "model.decoder.layers.2.fc1"
+               ; "model.decoder.layers.1.fc2"
+               ])
       ;;
     end)
 ;;
@@ -112,9 +121,9 @@ let view_of_form : Vdom.Node.t Computation.t =
       ~default_model:M.default
       ~apply_action:(fun ~inject:_ ~schedule_event:_ model action ->
         match action with
-        | Spec s -> { model with spec = s }
+        | Spec s -> { model with spec = s; show_images = false }
         | Images xs -> { model with images = xs; show_images = true }
-        | Error e -> { model with error = e })
+        | Error e -> { model with error = e; show_images = false })
   in
   let%sub form_v = form_of_v inject in
   let%sub () =
@@ -139,6 +148,7 @@ let view_of_form : Vdom.Node.t Computation.t =
   in
   Vdom.Node.div
     ([ Form.view_as_vdom form_v
+     ; Vdom.Node.text "internal state for debugging:"
      ; Vdom.Node.sexp_for_debugging ([%sexp_of: V.t Or_error.t] value)
        (* ; Vdom.Node.text (Sexp.to_string (M.sexp_of_t state)) *)
      ]
