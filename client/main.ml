@@ -22,6 +22,7 @@ module V = struct
     | Opt125m_output_range
     | Opt_all_output_range
     | Opt125m_heatmap_sensitive_layers of string list
+    | Opt_channel_max
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -91,22 +92,23 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
                ; "model.decoder.layers.2.fc1"
                ; "model.decoder.layers.1.fc2"
                ])
+        | Opt_channel_max -> Bonsai.const (Form.return ())
       ;;
     end)
 ;;
 
+let fetch_spec_for_v inject v =
+    fetch_spec
+      inject
+      (Base.String.lowercase (Sexp.to_string (V.sexp_of_t v)))  
 let handle_v_change inject = function
   | V.Opt125m_output_range ->
-    fetch_spec
-      inject
-      (Base.String.lowercase (Sexp.to_string (V.sexp_of_t V.Opt125m_output_range)))
-  | V.Opt_all_output_range ->
-    fetch_spec
-      inject
-      (Base.String.lowercase (Sexp.to_string (V.sexp_of_t V.Opt_all_output_range)))
+    fetch_spec_for_v inject V.Opt125m_output_range
+  | V.Opt_all_output_range -> fetch_spec_for_v inject V.Opt_all_output_range
   | V.Opt125m_heatmap_sensitive_layers selected ->
     handle_spec_change "{}";
     inject (Images selected)
+  | V.Opt_channel_max -> fetch_spec_for_v inject V.Opt_channel_max
 ;;
 
 let build_image_path layer_name = "data/opt125m/heatmap/images/" ^ layer_name ^ ".png"

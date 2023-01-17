@@ -1,0 +1,46 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {
+    "format": {"type": "csv"},
+    "url": "data/opt_channel_max.csv",
+    "name": "source"
+  },
+  "transform": [
+    {
+      "aggregate": [{"op": "argmax", "field": "max_value", "as": "mvalue"}],
+      "groupby": ["project_name", "batch_id", "layer_name", "tensor_type"]
+    }
+  ],
+  "facet": {
+    "column": {
+      "field": "mvalue.project_name",
+      "sort": ["opt125m", "opt300m", "opt1.3b", "opt2.7b"]
+    }
+  },
+  "spec": {
+    "width": 300,
+    "mark": "circle",
+    "encoding": {
+      "size": {
+        "field": "mvalue.max_value",
+        "legend": null,
+        "type": "quantitative"
+      },
+      "x": {
+        "axis": {"grid": false},
+        "field": "mvalue.channel_id",
+        "aggregate": {"argmax": "mvalue"},
+        "type": "quantitative",
+        "title": "Channel Id with the max value"
+      },
+      "y": {"field": "layer_name", "type": "ordinal", "axis": {"grid": true}},
+      "color": {"field": "mvalue.tensor_type", "type": "nominal"},
+      "tooltip": [
+        {"field": "mvalue.max_value", "type": "quantitative"},
+        {"field": "mvalue.channel_id", "type": "nominal"},
+        {"field": "mvalue.tensor_type", "type": "nominal"},
+        {"field": "layer_name", "type": "ordinal"}
+      ]
+    }
+  }
+}
