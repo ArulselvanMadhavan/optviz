@@ -1,0 +1,5 @@
+def any(lname, xs):
+    for x in xs:
+        if x in lname:
+            return True
+        else

@@ -1,0 +1,64 @@
+import torch
+import torchvision
+from idiom.db.client import IdiomDBClient
+from channel_stats import any, all
+import numpy as np
+
+port=9004
+client=IdiomDBClient(port=port)
+
+def collect_data(client, projects, runs_dict={"fp32":True}, max_batches=1):
+    with open("data/opt_outlier_counts.csv", "w+") as f:
+        columns = ["project", "layer", "ol_lower", "ol_higher", "ol_percent"]
+        f.write(",".join(columns))
+        f.write("\n")
+        for project_name in projects:
+            proj_info = client.get_project(project_name)
+            runs = proj_info["project"]["runs"]
+            runs = [r for r in runs if runs_dict.get(r["name"], False)]
+            for run in runs:
+                run_id = run["name"]
+                input_batch_ids = client.get_input_batches(project_name, run_id)
+                input_batch_ids = list(input_batch_ids.keys())[:max_batches]
+                run_info = client.get_run(project_name, run_id)
+                layer_names = [l["name"] for l in run_info["run"]["layers"]]
+
+                for input_batch_id in input_batch_ids:
+                    print("batch id:", project_name, run, input_batch_id)
+                    client.current_input_batch_id = input_batch_id
+                    total_rows = 0
+                    for lname in layer_names:
+                        if any(lname, ["attn", "attention", "ffn", "fc"]) and all(lname, ["dropout", "norm", "layernorm", "softmax"]):
+                            try:
+                                layer_var = client.load_layer_variables(project_name, run_id, lname)
+                                weight = layer_var.get("weight", None)
+                                if weight is not None:
+                                    inputs = client.load_layer_inputs(project_name, run_id, lname, input_batch_id)
+                                    if len(inputs) == 1:
+                                        x = inputs[0][0]
+                                        if len(x.shape) == 2:
+                                            x = x.reshape(8, x.shape[0]//8, x.shape[1])                                    
+                                        if len(x.shape) == 3:
+                                            x = x[0]
+                                        x = x.flatten()
+                                        q = torch.tensor([0.25, 0.5, 0.75])
+                                        q_out = torch.quantile(x, q)
+                                        q1, median, q3 = q[0], q[1], q[2]
+                                        iqr = q3 - q1
+                                        k = 1.5
+                                        lower_bound = q1 - (k * iqr)
+                                        upper_bound = q3 + (k * iqr)
+                                        q1_outliers = torch.where(x < lower_bound, x, 0)
+                                        q1_outliers = torch.nonzero(q1_outliers)
+                                        q1_ol_count = np.prod(q1_outliers.shape)
+                                        q3_outliers = torch.where(x > upper_bound, x, 0)
+                                        q3_outliers = torch.nonzero(q3_outliers)
+                                        q3_ol_count = np.prod(q3_outliers.shape)
+                                        total_count = np.prod(x.shape)
+                                        f.write("{},{},{},{},{}\n".format(project_name, lname, q1_ol_count, q3_ol_count, (q1_ol_count + q3_ol_count) / total_count))
+                                        #print(q1_ol_count, q3_ol_count, (q1_ol_count + q3_ol_count) / total_count)
+                            except Exception as e:
+                                print("Error:", e)
+
+            
+collect_data(client, ["opt125m", "opt350m", "opt1.3b", "opt2.7b"], runs_dict={"fp32":True}, max_batches=1)            
