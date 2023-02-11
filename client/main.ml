@@ -23,6 +23,7 @@ module V = struct
     | Opt_all_output_range
     | Opt125m_heatmap_sensitive_layers of string list
     | Opt_channel_max
+    | Opt125m_boxplot
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -50,7 +51,7 @@ let handle_spec_change s =
   ()
 ;;
 
-let fetch_spec inject s =
+let fetch_spec ?transform inject s =
   let open Effect.Let_syntax in
   let%bind response =
     Effect.of_deferred_fun
@@ -61,6 +62,8 @@ let fetch_spec inject s =
   then inject (Action.Error (Core.Result.error response))
   else (
     let spec = Core.Or_error.ok_exn response in
+    let spec = Option.fold transform ~init:spec ~f:(fun spec tf -> tf spec) in
+    Stdio.Out_channel.output_string Stdio.stdout spec;
     handle_spec_change spec;
     inject (Action.Spec (Some spec)))
 ;;
@@ -91,22 +94,29 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
                ; "model.decoder.layers.1.fc2"
                ])
         | Opt_channel_max -> Bonsai.const (Form.return ())
+        | Opt125m_boxplot -> Bonsai.const (Form.return ())
       ;;
     end)
 ;;
 
 let fetch_spec_for_v inject v =
-    fetch_spec
-      inject
-      (Base.String.lowercase (Sexp.to_string (V.sexp_of_t v)))  
+  fetch_spec inject (Base.String.lowercase (Sexp.to_string (V.sexp_of_t v)))
+;;
+
+let transform_boxplot_spec model spec =
+  let spec = Stringext.replace_all spec ~pattern:"data/opt_boxplot_stats.csv" ~with_:("data/" ^ model ^ "/opt_boxplot_stats.csv") in
+  let spec = Stringext.replace_all spec ~pattern:"data/opt_boxplot_outliers.csv" ~with_:("data/" ^ model ^ "/opt_boxplot_outliers.csv") in
+  spec
+    
 let handle_v_change inject = function
-  | V.Opt125m_output_range ->
-    fetch_spec_for_v inject V.Opt125m_output_range
+  | V.Opt125m_output_range -> fetch_spec_for_v inject V.Opt125m_output_range
   | V.Opt_all_output_range -> fetch_spec_for_v inject V.Opt_all_output_range
   | V.Opt125m_heatmap_sensitive_layers selected ->
     handle_spec_change "{}";
     inject (Images selected)
   | V.Opt_channel_max -> fetch_spec_for_v inject V.Opt_channel_max
+  | V.Opt125m_boxplot ->
+    fetch_spec ~transform:(transform_boxplot_spec "opt125m") inject "opt_boxplot" (* Download the generic recipe *)
 ;;
 
 let build_image_path layer_name = "data/opt125m/heatmap/images/" ^ layer_name ^ ".png"

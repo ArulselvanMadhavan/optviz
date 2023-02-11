@@ -21,6 +21,14 @@ let html =
   <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
   <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
       <script type="text/javascript" src="main.js"></script>
+<style>
+form.vega-bindings {
+    display: flex;
+    position: absolute;
+    top: 0px;
+    flex-direction:column;
+}
+</style>
     </head>
     <body>
       <h1>OPT visualizations</h1>

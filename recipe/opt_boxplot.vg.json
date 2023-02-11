@@ -1,5 +1,6 @@
 {
-  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+     "padding":{"top": 50},
   "data": {
     "url": "data/opt_boxplot_stats.csv",
     "format": {
