@@ -24,6 +24,9 @@ module V = struct
     | Opt125m_heatmap_sensitive_layers of string list
     | Opt_channel_max
     | Opt125m_boxplot
+    | Opt350m_boxplot
+    | Opt1b_boxplot
+    | Opt2b_boxplot
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -95,6 +98,9 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
                ])
         | Opt_channel_max -> Bonsai.const (Form.return ())
         | Opt125m_boxplot -> Bonsai.const (Form.return ())
+        | Opt350m_boxplot -> Bonsai.const (Form.return ())
+        | Opt1b_boxplot-> Bonsai.const (Form.return ())
+        | Opt2b_boxplot -> Bonsai.const (Form.return ())
       ;;
     end)
 ;;
@@ -117,6 +123,12 @@ let handle_v_change inject = function
   | V.Opt_channel_max -> fetch_spec_for_v inject V.Opt_channel_max
   | V.Opt125m_boxplot ->
     fetch_spec ~transform:(transform_boxplot_spec "opt125m") inject "opt_boxplot" (* Download the generic recipe *)
+  | V.Opt350m_boxplot ->
+    fetch_spec ~transform:(transform_boxplot_spec "opt350m") inject "opt_boxplot"
+  | V.Opt1b_boxplot ->
+    fetch_spec ~transform:(transform_boxplot_spec "opt1.3b") inject "opt_boxplot"
+  | V.Opt2b_boxplot ->
+    fetch_spec ~transform:(transform_boxplot_spec "opt2.7b") inject "opt_boxplot"
 ;;
 
 let build_image_path layer_name = "data/opt125m/heatmap/images/" ^ layer_name ^ ".png"
