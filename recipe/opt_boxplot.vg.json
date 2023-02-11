@@ -1,6 +1,23 @@
 {
   "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
-  "data": {"url": "data/opt_boxplot.json", "format": {"type": "json"}},
+  "data": {
+    "url": "data/opt_boxplot_stats.csv",
+    "format": {
+      "type": "csv",
+      "parse": {
+        "total": "number",
+        "q1_count": "number",
+        "q3_count": "number",
+        "q1": "number",
+        "q3": "number",
+        "median": "number",
+        "lower": "number",
+        "upper": "number",
+        "layer_id": "number"
+      }
+    },
+    "name": "stats_data"
+  },
   "params": [
     {
       "name": "min_clamp",
@@ -15,7 +32,6 @@
   ],
   "encoding": {"y": {"field": "layer", "type": "nominal", "sort": {}}},
   "width": 600,
-  "transform": [{"flatten": ["outliers"]}],
   "layer": [
     {
       "mark": {"type": "rule"},
@@ -64,6 +80,24 @@
       "encoding": {"x": {"field": "median", "type": "quantitative"}}
     },
     {
+      "data": {
+        "url": "data/opt_boxplot_outliers.csv",
+        "format": {
+          "type": "csv",
+          "parse": {"layer_id": "number", "outliers": "number"}
+        },
+        "name": "outlier_data"
+      },
+      "transform": [
+        {
+          "lookup": "layer_id",
+          "from": {
+            "data": {"name": "stats_data"},
+            "key": "layer_id",
+            "fields": ["layer", "total", "q1_count", "q3_count"]
+          }
+        }
+      ],
       "mark": {"type": "point", "style": "boxplot-outliers"},
       "encoding": {
         "x": {"field": "outliers", "type": "quantitative"},
@@ -73,7 +107,6 @@
             "type": "quantitative",
             "title": "outlier_value"
           },
-          {"field": "project", "type": "nominal", "title": "project"},
           {"field": "layer", "type": "nominal", "title": "layer"},
           {"field": "total", "type": "quantitative", "title": "total_outliers"},
           {
@@ -92,9 +125,21 @@
     {
       "transform": [
         {
-          "groupby": ["layer"],
-          "aggregate": [{"field": "outliers", "op": "max", "as": "max_outlier"}]
-        },
+          "calculate": "datum.min_outlier * min_clamp",
+          "as": "min_outlier_clamped"
+        }
+      ],
+      "mark": "rule",
+      "encoding": {
+        "x": {"field": "min_outlier_clamped", "type": "quantitative"},
+        "y": {"field": "layer", "type": "nominal", "sort": {}},
+        "y2": {"field": "layer", "bandPosition": 0},
+        "color": {"value": "black"},
+        "size": {"value": 2}
+      }
+    },
+    {
+      "transform": [
         {
           "calculate": "datum.max_outlier * max_clamp",
           "as": "max_outlier_clamped"
@@ -106,26 +151,6 @@
         "y": {"field": "layer", "type": "nominal", "sort": {}},
         "y2": {"field": "layer", "bandPosition": 0},
         "color": {"value": "red"},
-        "size": {"value": 2}
-      }
-    },
-    {
-      "transform": [
-        {
-          "groupby": ["layer"],
-          "aggregate": [{"field": "outliers", "op": "min", "as": "min_outlier"}]
-        },
-        {
-          "calculate": "datum.min_outlier * min_clamp",
-          "as": "min_outlier_clamped"
-        }
-      ],
-      "mark": "rule",
-      "encoding": {
-        "x": {"field": "min_outlier_clamped", "type": "quantitative"},
-        "y": {"field": "layer", "type": "nominal", "sort": {}},
-        "y2": {"field": "layer", "bandPosition": 0},
-        "color": {"value": "black"},
         "size": {"value": 2}
       }
     }
