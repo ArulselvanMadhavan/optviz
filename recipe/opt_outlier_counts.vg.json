@@ -1,0 +1,40 @@
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {
+    "url": "data/opt_outlier_counts.csv",
+    "format": {
+      "type": "csv",
+      "parse": {
+        "ol_percent": "number",
+        "ol_lower": "number",
+        "ol_higher": "number"
+      }
+    }
+  },
+  "transform": [
+    {"calculate": "100.0*datum.ol_percent", "as": "outlier_percent"}
+  ],
+  "facet": {
+    "column": {
+      "field": "project",
+      "sort": ["opt125m", "opt350m", "opt1.3b", "opt2.7b"]
+    }
+  },
+  "spec": {
+    "mark": "bar",
+    "encoding": {
+      "y": {"field": "layer", "type": "nominal", "sort": null},
+      "x": {"field": "outlier_percent", "type": "quantitative"},
+      "tooltip": [
+        {"field": "project", "type": "nominal"},
+        {"field": "outlier_percent", "type": "quantitative"},
+        {"field": "ol_lower", "type": "quantitative", "title": "outlier_lower"},
+        {
+          "field": "ol_higher",
+          "type": "quantitative",
+          "title": "outlier_higher"
+        }
+      ]
+    }
+  }
+}
