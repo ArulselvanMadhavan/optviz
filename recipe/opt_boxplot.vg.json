@@ -113,12 +113,12 @@
           {
             "field": "q1_count",
             "type": "quantitative",
-            "title": "outliers < first quartile"
+            "title": "outliers < lower whisker"
           },
           {
             "field": "q3_count",
             "type": "quantitative",
-            "title": "outliers > third quartile"
+            "title": "outliers > upper whisker"
           }
         ]
       }
