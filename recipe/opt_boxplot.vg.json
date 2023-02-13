@@ -58,7 +58,6 @@
           "legend": null
         },
         "tooltip": [
-          {"field": "project", "type": "nominal", "title": "project"},
           {"field": "layer", "type": "nominal", "title": "layer"},
           {"field": "median", "type": "quantitative", "title": "median"},
           {"field": "q1", "type": "quantitative", "title": "first quartile"},
