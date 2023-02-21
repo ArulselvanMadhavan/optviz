@@ -1,0 +1,253 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "background": "white",
+  "padding": 5,
+  "width": 600,
+  "style": "cell",
+  "data": [
+    {
+      "name": "source_0",
+      "url": "data/opt_boxplot.json",
+      "format": {"type": "json"},
+      "transform": [
+        {"type": "flatten", "fields": ["outliers"], "as": ["outliers"]}
+      ]
+    },
+    {
+      "name": "data_0",
+      "source": "source_0",
+      "transform": [
+        {
+          "type": "filter",
+          "expr": "isValid(datum[\"lower\"]) && isFinite(+datum[\"lower\"])"
+        }
+      ]
+    },
+    {
+      "name": "data_1",
+      "source": "source_0",
+      "transform": [
+        {
+          "type": "filter",
+          "expr": "isValid(datum[\"q1\"]) && isFinite(+datum[\"q1\"])"
+        }
+      ]
+    },
+    {
+      "name": "data_2",
+      "source": "source_0",
+      "transform": [
+        {
+          "type": "filter",
+          "expr": "isValid(datum[\"median\"]) && isFinite(+datum[\"median\"])"
+        }
+      ]
+    },
+    {
+      "name": "data_3",
+      "source": "source_0",
+      "transform": [
+        {
+          "type": "filter",
+          "expr": "isValid(datum[\"outliers\"]) && isFinite(+datum[\"outliers\"])"
+        }
+      ]
+    },
+    {
+      "name": "data_4",
+      "source": "source_0",
+      "transform": [
+        {
+          "type": "aggregate",
+          "groupby": ["layer"],
+          "ops": ["max"],
+          "fields": ["outliers"],
+          "as": ["max_outlier"]
+        },
+        {
+          "type": "filter",
+          "expr": "isValid(datum[\"max_outlier\"]) && isFinite(+datum[\"max_outlier\"])"
+        }
+      ]
+    }
+  ],
+  "signals": [
+    {"name": "y_step", "value": 20},
+    {"name": "height", "update": "bandspace(domain('y').length, 0, 0) * y_step"}
+  ],
+  "marks": [
+    {
+      "name": "layer_0_marks",
+      "type": "rule",
+      "style": ["rule"],
+      "from": {"data": "data_0"},
+      "encode": {
+        "update": {
+          "stroke": {"value": "black"},
+          "description": {
+            "signal": "\"lower: \" + (format(datum[\"lower\"], \"\")) + \"; layer: \" + (isValid(datum[\"layer\"]) ? datum[\"layer\"] : \"\"+datum[\"layer\"]) + \"; upper: \" + (format(datum[\"upper\"], \"\"))"
+          },
+          "x": {"scale": "x", "field": "lower"},
+          "x2": {"scale": "x", "field": "upper"},
+          "y": {"scale": "y", "field": "layer", "band": 0.5}
+        }
+      }
+    },
+    {
+      "name": "layer_1_marks",
+      "type": "rect",
+      "style": ["bar"],
+      "from": {"data": "data_1"},
+      "encode": {
+        "update": {
+          "fill": {"scale": "color", "field": "layer"},
+          "tooltip": {
+            "signal": "{\"project\": isValid(datum[\"project\"]) ? datum[\"project\"] : \"\"+datum[\"project\"], \"layer\": isValid(datum[\"layer\"]) ? datum[\"layer\"] : \"\"+datum[\"layer\"], \"median\": format(datum[\"median\"], \"\"), \"first quartile\": format(datum[\"q1\"], \"\"), \"third quartile\": format(datum[\"q3\"], \"\"), \"whisker lower bound\": format(datum[\"lower\"], \"\"), \"whisker upper bound\": format(datum[\"upper\"], \"\")}"
+          },
+          "ariaRoleDescription": {"value": "bar"},
+          "description": {
+            "signal": "\"q1: \" + (format(datum[\"q1\"], \"\")) + \"; layer: \" + (isValid(datum[\"layer\"]) ? datum[\"layer\"] : \"\"+datum[\"layer\"]) + \"; q3: \" + (format(datum[\"q3\"], \"\")) + \"; project: \" + (isValid(datum[\"project\"]) ? datum[\"project\"] : \"\"+datum[\"project\"]) + \"; median: \" + (format(datum[\"median\"], \"\")) + \"; first quartile: \" + (format(datum[\"q1\"], \"\")) + \"; third quartile: \" + (format(datum[\"q3\"], \"\")) + \"; whisker lower bound: \" + (format(datum[\"lower\"], \"\")) + \"; whisker upper bound: \" + (format(datum[\"upper\"], \"\"))"
+          },
+          "x": {"scale": "x", "field": "q1"},
+          "x2": {"scale": "x", "field": "q3"},
+          "yc": {"scale": "y", "field": "layer", "band": 0.5},
+          "height": {"value": 14}
+        }
+      }
+    },
+    {
+      "name": "layer_2_marks",
+      "type": "rect",
+      "style": ["tick"],
+      "from": {"data": "data_2"},
+      "encode": {
+        "update": {
+          "opacity": {"value": 0.7},
+          "fill": {"value": "white"},
+          "ariaRoleDescription": {"value": "tick"},
+          "description": {
+            "signal": "\"median: \" + (format(datum[\"median\"], \"\")) + \"; layer: \" + (isValid(datum[\"layer\"]) ? datum[\"layer\"] : \"\"+datum[\"layer\"])"
+          },
+          "xc": {"scale": "x", "field": "median"},
+          "yc": {"scale": "y", "field": "layer", "band": 0.5},
+          "height": {"value": 1},
+          "width": {"value": 1}
+        }
+      }
+    },
+    {
+      "name": "layer_3_marks",
+      "type": "symbol",
+      "style": ["point", "boxplot-outliers"],
+      "from": {"data": "data_3"},
+      "encode": {
+        "update": {
+          "opacity": {"value": 0.7},
+          "fill": {"value": "transparent"},
+          "stroke": {"value": "#4c78a8"},
+          "tooltip": {
+            "signal": "{\"outlier_value\": format(datum[\"outliers\"], \"\"), \"project\": isValid(datum[\"project\"]) ? datum[\"project\"] : \"\"+datum[\"project\"], \"layer\": isValid(datum[\"layer\"]) ? datum[\"layer\"] : \"\"+datum[\"layer\"], \"total_outliers\": format(datum[\"total\"], \"\"), \"outliers < first quartile\": format(datum[\"q1_count\"], \"\"), \"outliers > third quartile\": format(datum[\"q3_count\"], \"\")}"
+          },
+          "ariaRoleDescription": {"value": "point"},
+          "description": {
+            "signal": "\"outliers: \" + (format(datum[\"outliers\"], \"\")) + \"; layer: \" + (isValid(datum[\"layer\"]) ? datum[\"layer\"] : \"\"+datum[\"layer\"]) + \"; outlier_value: \" + (format(datum[\"outliers\"], \"\")) + \"; project: \" + (isValid(datum[\"project\"]) ? datum[\"project\"] : \"\"+datum[\"project\"]) + \"; total_outliers: \" + (format(datum[\"total\"], \"\")) + \"; outliers < first quartile: \" + (format(datum[\"q1_count\"], \"\")) + \"; outliers > third quartile: \" + (format(datum[\"q3_count\"], \"\"))"
+          },
+          "x": {"scale": "x", "field": "outliers"},
+          "y": {"scale": "y", "field": "layer", "band": 0.5}
+        }
+      }
+    },
+    {
+      "name": "layer_4_marks",
+      "type": "rule",
+      "style": ["rule"],
+      "from": {"data": "data_4"},
+      "encode": {
+        "update": {
+          "stroke": {"value": "red"},
+          "description": {
+            "signal": "\"max_outlier: \" + (format(datum[\"max_outlier\"], \"\")) + \"; layer: \" + (isValid(datum[\"layer\"]) ? datum[\"layer\"] : \"\"+datum[\"layer\"])"
+          },
+          "x": {"scale": "x", "field": "max_outlier"},
+          "y": {"scale": "y", "field": "layer", "band": 0.5},
+          "y2": {"scale":"y","field":"layer"},
+          "strokeWidth": {"value": 2}
+        }
+      }
+    }
+  ],
+  "scales": [
+    {
+      "name": "x",
+      "type": "linear",
+      "domain": {
+        "fields": [
+          {"data": "data_0", "field": "lower"},
+          {"data": "data_0", "field": "upper"},
+          {"data": "data_1", "field": "q1"},
+          {"data": "data_1", "field": "q3"},
+          {"data": "data_2", "field": "median"},
+          {"data": "data_3", "field": "outliers"},
+          {"data": "data_4", "field": "max_outlier"}
+        ]
+      },
+      "range": [0, {"signal": "width"}],
+      "zero": false,
+      "nice": true
+    },
+    {
+      "name": "y",
+      "type": "band",
+      "domain": {
+        "fields": [
+          {"data": "data_0", "field": "layer"},
+          {"data": "data_1", "field": "layer"},
+          {"data": "data_2", "field": "layer"},
+          {"data": "data_3", "field": "layer"},
+          {"data": "data_4", "field": "layer"}
+        ]
+      },
+      "range": {"step": {"signal": "y_step"}},
+      "paddingInner": 0,
+      "paddingOuter": 0
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "domain": {"data": "data_1", "field": "layer"},
+      "range": "category"
+    }
+  ],
+  "axes": [
+    {
+      "scale": "x",
+      "orient": "bottom",
+      "gridScale": "y",
+      "grid": true,
+      "tickCount": {"signal": "ceil(width/40)"},
+      "domain": false,
+      "labels": false,
+      "aria": false,
+      "maxExtent": 0,
+      "minExtent": 0,
+      "ticks": false,
+      "zindex": 0
+    },
+    {
+      "scale": "x",
+      "orient": "bottom",
+      "grid": false,
+      "labelFlush": true,
+      "labelOverlap": true,
+      "tickCount": {"signal": "ceil(width/40)"},
+      "zindex": 0
+    },
+    {
+      "scale": "y",
+      "orient": "left",
+      "grid": false,
+      "title": "layer",
+      "zindex": 0
+    }
+  ]
+}

@@ -27,6 +27,10 @@ module V = struct
     | Opt350m_boxplot
     | Opt1b_boxplot
     | Opt2b_boxplot
+    | Opt125m_input_hist
+    | Opt125m_weight_hist
+    | Opt125m_input_calib
+    | Opt125m_weight_calib
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -99,8 +103,12 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
         | Opt_channel_max -> Bonsai.const (Form.return ())
         | Opt125m_boxplot -> Bonsai.const (Form.return ())
         | Opt350m_boxplot -> Bonsai.const (Form.return ())
-        | Opt1b_boxplot-> Bonsai.const (Form.return ())
+        | Opt1b_boxplot -> Bonsai.const (Form.return ())
         | Opt2b_boxplot -> Bonsai.const (Form.return ())
+        | Opt125m_input_hist -> Bonsai.const (Form.return ())
+        | Opt125m_weight_hist -> Bonsai.const (Form.return ())
+        | Opt125m_weight_calib -> Bonsai.const (Form.return ())
+        | Opt125m_input_calib -> Bonsai.const (Form.return ())
       ;;
     end)
 ;;
@@ -110,10 +118,49 @@ let fetch_spec_for_v inject v =
 ;;
 
 let transform_boxplot_spec model spec =
-  let spec = Stringext.replace_all spec ~pattern:"data/opt_boxplot_stats.csv" ~with_:("data/" ^ model ^ "/opt_boxplot_stats.csv") in
-  let spec = Stringext.replace_all spec ~pattern:"data/opt_boxplot_outliers.csv" ~with_:("data/" ^ model ^ "/opt_boxplot_outliers.csv") in
+  let spec =
+    Stringext.replace_all
+      spec
+      ~pattern:"data/opt_boxplot_stats.csv"
+      ~with_:("data/" ^ model ^ "/opt_boxplot_stats.csv")
+  in
+  let spec =
+    Stringext.replace_all
+      spec
+      ~pattern:"data/opt_boxplot_outliers.csv"
+      ~with_:("data/" ^ model ^ "/opt_boxplot_outliers.csv")
+  in
   spec
-    
+;;
+
+let transform_hist_spec model prefix spec =
+  let prefix = "data/" ^ model ^ "/quant/" ^ prefix in
+  let spec =
+    Stringext.replace_all
+      spec
+      ~pattern:"data/replace_me_hist.csv"
+      ~with_:(prefix ^ "_hist.csv")
+  in
+  let spec =
+    Stringext.replace_all
+      spec
+      ~pattern:"data/replace_me_calib.csv"
+      ~with_:(prefix ^ "_calib.csv")
+  in
+  spec
+;;
+
+let transform_quant_spec model prefix spec =
+  let prefix = "data/" ^ model ^ "/quant/" ^ prefix in
+  let spec =
+    Stringext.replace_all
+      spec
+      ~pattern:"data/replace_me_calib.csv"
+      ~with_:(prefix ^ "_calib.csv")
+  in
+  spec
+;;
+
 let handle_v_change inject = function
   | V.Opt125m_output_range -> fetch_spec_for_v inject V.Opt125m_output_range
   | V.Opt_all_output_range -> fetch_spec_for_v inject V.Opt_all_output_range
@@ -122,13 +169,30 @@ let handle_v_change inject = function
     inject (Images selected)
   | V.Opt_channel_max -> fetch_spec_for_v inject V.Opt_channel_max
   | V.Opt125m_boxplot ->
-    fetch_spec ~transform:(transform_boxplot_spec "opt125m") inject "opt_boxplot" (* Download the generic recipe *)
+    fetch_spec
+      ~transform:(transform_boxplot_spec "opt125m")
+      inject
+      "opt_boxplot" (* Download the generic recipe *)
   | V.Opt350m_boxplot ->
     fetch_spec ~transform:(transform_boxplot_spec "opt350m") inject "opt_boxplot"
   | V.Opt1b_boxplot ->
     fetch_spec ~transform:(transform_boxplot_spec "opt1.3b") inject "opt_boxplot"
   | V.Opt2b_boxplot ->
     fetch_spec ~transform:(transform_boxplot_spec "opt2.7b") inject "opt_boxplot"
+  | V.Opt125m_input_hist ->
+    fetch_spec ~transform:(transform_hist_spec "opt125m" "inputs") inject "histogram_comp"
+  | V.Opt125m_weight_hist ->
+    fetch_spec
+      ~transform:(transform_hist_spec "opt125m" "layer_variables")
+      inject
+      "histogram_comp"
+  | V.Opt125m_input_calib ->
+    fetch_spec ~transform:(transform_quant_spec "opt125m" "inputs") inject "quant_error"
+  | V.Opt125m_weight_calib ->
+    fetch_spec
+      ~transform:(transform_quant_spec "opt125m" "layer_variables")
+      inject
+      "quant_error"
 ;;
 
 let build_image_path layer_name = "data/opt125m/heatmap/images/" ^ layer_name ^ ".png"
