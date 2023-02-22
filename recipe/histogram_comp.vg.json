@@ -51,7 +51,7 @@
     }
   ],
   "signals": [
-    {"name": "child_width", "value": 800},
+    {"name": "child_width", "value": 1000},
     {"name": "child_height", "value": 200}
   ],
   "layout": {
