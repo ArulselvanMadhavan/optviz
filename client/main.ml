@@ -165,7 +165,7 @@ let transform_hist_spec v spec =
 ;;
 
 let transform_quant_spec v spec =
-  let model, filename = get_name_and_model v in
+  let model, filename, _ = get_name_and_model v in
   let prefix = "data/" ^ model ^ "/quant/" ^ filename in
   Stdio.print_string prefix;
   Stdio.Out_channel.flush Stdio.stdout;
