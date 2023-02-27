@@ -27,10 +27,12 @@ module V = struct
     | Opt350m_boxplot
     | Opt1b_boxplot
     | Opt2b_boxplot
-    | Opt125m_input_hist
-    | Opt125m_weight_hist
-    | Opt125m_input_calib
-    | Opt125m_weight_calib
+    | Opt125m_fp8_inputs_hist
+    | Opt125m_fp8_layer_variables_hist
+    | Opt125m_fp8_inputs_calib
+    | Opt125m_fp8_layer_variables_calib
+    | Opt125m_vsq_layer_variables_calib
+    | Opt125m_vsq_inputs_calib
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -105,10 +107,12 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
         | Opt350m_boxplot -> Bonsai.const (Form.return ())
         | Opt1b_boxplot -> Bonsai.const (Form.return ())
         | Opt2b_boxplot -> Bonsai.const (Form.return ())
-        | Opt125m_input_hist -> Bonsai.const (Form.return ())
-        | Opt125m_weight_hist -> Bonsai.const (Form.return ())
-        | Opt125m_weight_calib -> Bonsai.const (Form.return ())
-        | Opt125m_input_calib -> Bonsai.const (Form.return ())
+        | Opt125m_fp8_inputs_hist -> Bonsai.const (Form.return ())
+        | Opt125m_fp8_layer_variables_hist -> Bonsai.const (Form.return ())
+        | Opt125m_fp8_layer_variables_calib -> Bonsai.const (Form.return ())
+        | Opt125m_fp8_inputs_calib -> Bonsai.const (Form.return ())
+        | Opt125m_vsq_layer_variables_calib -> Bonsai.const (Form.return ())
+        | Opt125m_vsq_inputs_calib -> Bonsai.const (Form.return ())
       ;;
     end)
 ;;
@@ -133,30 +137,37 @@ let transform_boxplot_spec model spec =
   spec
 ;;
 
-let transform_hist_spec model prefix spec =
-  let prefix = "data/" ^ model ^ "/quant/" ^ prefix in
+let get_name_and_model v =
+  let name = Base.String.lowercase (Sexp.to_string (V.sexp_of_t v)) in
+  let parts = String.split name ~on:'_' in
+  let model = List.hd_exn parts in
+  let filename = String.concat ~sep:"_" (List.tl_exn parts) in
+  model, filename
+;;
+
+let transform_hist_spec v spec =
+  let model, filename = get_name_and_model v in
+  let prefix = "data/" ^ model ^ "/quant/" ^ filename in
   let spec =
-    Stringext.replace_all
-      spec
-      ~pattern:"data/replace_me_hist.csv"
-      ~with_:(prefix ^ "_hist.csv")
+    Stringext.replace_all spec ~pattern:"data/replace_me_hist.csv" ~with_:(prefix ^ ".csv")
   in
   let spec =
     Stringext.replace_all
       spec
       ~pattern:"data/replace_me_calib.csv"
-      ~with_:(prefix ^ "_calib.csv")
+      ~with_:(prefix ^ ".csv")
   in
   spec
 ;;
 
-let transform_quant_spec model prefix spec =
-  let prefix = "data/" ^ model ^ "/quant/" ^ prefix in
+let transform_quant_spec v spec =
+  let model, filename = get_name_and_model v in
+  let prefix = "data/" ^ model ^ "/quant/" ^ filename in
   let spec =
     Stringext.replace_all
       spec
       ~pattern:"data/replace_me_calib.csv"
-      ~with_:(prefix ^ "_calib.csv")
+      ~with_:(prefix ^ ".csv")
   in
   spec
 ;;
@@ -179,18 +190,34 @@ let handle_v_change inject = function
     fetch_spec ~transform:(transform_boxplot_spec "opt1.3b") inject "opt_boxplot"
   | V.Opt2b_boxplot ->
     fetch_spec ~transform:(transform_boxplot_spec "opt2.7b") inject "opt_boxplot"
-  | V.Opt125m_input_hist ->
-    fetch_spec ~transform:(transform_hist_spec "opt125m" "inputs") inject "histogram_comp"
-  | V.Opt125m_weight_hist ->
+  | V.Opt125m_fp8_layer_variables_hist ->
     fetch_spec
-      ~transform:(transform_hist_spec "opt125m" "layer_variables")
+      ~transform:(transform_hist_spec V.Opt125m_fp8_layer_variables_hist)
       inject
       "histogram_comp"
-  | V.Opt125m_input_calib ->
-    fetch_spec ~transform:(transform_quant_spec "opt125m" "inputs") inject "quant_error"
-  | V.Opt125m_weight_calib ->
+  | V.Opt125m_fp8_inputs_hist ->
     fetch_spec
-      ~transform:(transform_quant_spec "opt125m" "layer_variables")
+      ~transform:(transform_hist_spec V.Opt125m_fp8_inputs_hist)
+      inject
+      "histogram_comp"
+  | V.Opt125m_fp8_inputs_calib ->
+    fetch_spec
+      ~transform:(transform_quant_spec V.Opt125m_fp8_inputs_calib)
+      inject
+      "quant_error"
+  | V.Opt125m_fp8_layer_variables_calib ->
+    fetch_spec
+      ~transform:(transform_quant_spec V.Opt125m_fp8_layer_variables_calib)
+      inject
+      "quant_error"
+  | V.Opt125m_vsq_inputs_calib ->
+    fetch_spec
+      ~transform:(transform_quant_spec V.Opt125m_vsq_inputs_calib)
+      inject
+      "quant_error"
+  | V.Opt125m_vsq_layer_variables_calib ->
+    fetch_spec
+      ~transform:(transform_hist_spec V.Opt125m_vsq_layer_variables_calib)
       inject
       "quant_error"
 ;;
