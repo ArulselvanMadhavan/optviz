@@ -142,22 +142,24 @@ let get_name_and_model v =
   let parts = String.split name ~on:'_' in
   let model = List.hd_exn parts in
   let filename = String.concat ~sep:"_" (List.tl_exn parts) in
-  model, filename
+  model, filename, List.tl_exn parts
 ;;
 
 let transform_hist_spec v spec =
-  let model, filename = get_name_and_model v in
+  let model, filename, parts = get_name_and_model v in
   let prefix = "data/" ^ model ^ "/quant/" ^ filename in
     Stdio.print_string prefix;
   Stdio.Out_channel.flush Stdio.stdout;
   let spec =
     Stringext.replace_all spec ~pattern:"data/replace_me_hist.csv" ~with_:(prefix ^ ".csv")
   in
+  let parts = List.drop_last_exn parts in
+  let prefix = String.concat ~sep:"_" parts in
   let spec =
     Stringext.replace_all
       spec
       ~pattern:"data/replace_me_calib.csv"
-      ~with_:(prefix ^ ".csv")
+      ~with_:(prefix ^ "_calib" ^ ".csv")
   in
   spec
 ;;
