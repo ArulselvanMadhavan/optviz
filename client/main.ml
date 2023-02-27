@@ -163,6 +163,8 @@ let transform_hist_spec v spec =
 let transform_quant_spec v spec =
   let model, filename = get_name_and_model v in
   let prefix = "data/" ^ model ^ "/quant/" ^ filename in
+  Stdio.print_string prefix;
+  Stdio.Out_channel.flush Stdio.stdout;
   let spec =
     Stringext.replace_all
       spec
@@ -217,7 +219,7 @@ let handle_v_change inject = function
       "quant_error"
   | V.Opt125m_vsq_layer_variables_calib ->
     fetch_spec
-      ~transform:(transform_hist_spec V.Opt125m_vsq_layer_variables_calib)
+      ~transform:(transform_quant_spec V.Opt125m_vsq_layer_variables_calib)
       inject
       "quant_error"
 ;;
