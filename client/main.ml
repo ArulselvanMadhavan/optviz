@@ -147,19 +147,20 @@ let get_name_and_model v =
 
 let transform_hist_spec v spec =
   let model, filename, parts = get_name_and_model v in
-  let prefix = "data/" ^ model ^ "/quant/" ^ filename in
-    Stdio.print_string prefix;
-  Stdio.Out_channel.flush Stdio.stdout;
+  let prefix filename = "data/" ^ model ^ "/quant/" ^ filename in
   let spec =
-    Stringext.replace_all spec ~pattern:"data/replace_me_hist.csv" ~with_:(prefix ^ ".csv")
+    Stringext.replace_all
+      spec
+      ~pattern:"data/replace_me_hist.csv"
+      ~with_:(prefix filename ^ ".csv")
   in
   let parts = List.drop_last_exn parts in
-  let prefix = String.concat ~sep:"_" parts in
+  let calib_file = String.concat ~sep:"_" parts in
   let spec =
     Stringext.replace_all
       spec
       ~pattern:"data/replace_me_calib.csv"
-      ~with_:(prefix ^ "_calib" ^ ".csv")
+      ~with_:(prefix calib_file ^ "_calib" ^ ".csv")
   in
   spec
 ;;
@@ -167,8 +168,6 @@ let transform_hist_spec v spec =
 let transform_quant_spec v spec =
   let model, filename, _ = get_name_and_model v in
   let prefix = "data/" ^ model ^ "/quant/" ^ filename in
-  Stdio.print_string prefix;
-  Stdio.Out_channel.flush Stdio.stdout;
   let spec =
     Stringext.replace_all
       spec
@@ -222,8 +221,8 @@ let handle_v_change inject = function
       inject
       "quant_error"
   | V.Opt125m_vsq_layer_variables_calib ->
-        Stdio.print_string "vsq save";
-  Stdio.Out_channel.flush Stdio.stdout;
+    Stdio.print_string "vsq save";
+    Stdio.Out_channel.flush Stdio.stdout;
     fetch_spec
       ~transform:(transform_quant_spec V.Opt125m_vsq_layer_variables_calib)
       inject
