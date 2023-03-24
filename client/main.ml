@@ -28,7 +28,8 @@ module V = struct
     | Opt1b_boxplot
     | Opt2b_boxplot
     | Opt125m_fp8_inputs_hist
-    | Opt125m_fp8_layer_variables_hist
+    | Opt125m_fp8_weights_hist
+    | Opt125m_fp8_outputs_hist
     | Opt125m_fp8_inputs_calib
     | Opt125m_fp8_layer_variables_calib
     | Opt125m_vsq_layer_variables_calib
@@ -108,7 +109,9 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
         | Opt1b_boxplot -> Bonsai.const (Form.return ())
         | Opt2b_boxplot -> Bonsai.const (Form.return ())
         | Opt125m_fp8_inputs_hist -> Bonsai.const (Form.return ())
-        | Opt125m_fp8_layer_variables_hist -> Bonsai.const (Form.return ())
+        | Opt125m_fp8_weights_hist -> Bonsai.const (Form.return ())
+        | Opt125m_fp8_outputs_hist -> Bonsai.const (Form.return ())                                        
+        (* | Opt125m_fp8_layer_variables_hist -> Bonsai.const (Form.return ()) *)
         | Opt125m_fp8_layer_variables_calib -> Bonsai.const (Form.return ())
         | Opt125m_fp8_inputs_calib -> Bonsai.const (Form.return ())
         | Opt125m_vsq_layer_variables_calib -> Bonsai.const (Form.return ())
@@ -195,14 +198,9 @@ let handle_v_change inject = function
     fetch_spec ~transform:(transform_boxplot_spec "opt1.3b") inject "opt_boxplot"
   | V.Opt2b_boxplot ->
     fetch_spec ~transform:(transform_boxplot_spec "opt2.7b") inject "opt_boxplot"
-  | V.Opt125m_fp8_layer_variables_hist ->
+  | (V.Opt125m_fp8_inputs_hist | V.Opt125m_fp8_outputs_hist | V.Opt125m_fp8_weights_hist) as v ->
     fetch_spec
-      ~transform:(transform_hist_spec V.Opt125m_fp8_layer_variables_hist)
-      inject
-      "histogram_comp"
-  | V.Opt125m_fp8_inputs_hist ->
-    fetch_spec
-      ~transform:(transform_hist_spec V.Opt125m_fp8_inputs_hist)
+      ~transform:(transform_hist_spec v)
       inject
       "histogram_comp"
   | V.Opt125m_fp8_inputs_calib ->
