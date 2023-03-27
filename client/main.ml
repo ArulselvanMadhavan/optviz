@@ -34,6 +34,7 @@ module V = struct
     | Opt125m_fp8_layer_variables_calib
     | Opt125m_vsq_layer_variables_calib
     | Opt125m_vsq_inputs_calib
+    | Opt6dot7b_fp8_inputs_hist
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -110,7 +111,8 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
         | Opt2b_boxplot -> Bonsai.const (Form.return ())
         | Opt125m_fp8_inputs_hist -> Bonsai.const (Form.return ())
         | Opt125m_fp8_weights_hist -> Bonsai.const (Form.return ())
-        | Opt125m_fp8_outputs_hist -> Bonsai.const (Form.return ())                                        
+        | Opt125m_fp8_outputs_hist -> Bonsai.const (Form.return ())
+        | Opt6dot7b_fp8_inputs_hist -> Bonsai.const (Form.return ())
         (* | Opt125m_fp8_layer_variables_hist -> Bonsai.const (Form.return ()) *)
         | Opt125m_fp8_layer_variables_calib -> Bonsai.const (Form.return ())
         | Opt125m_fp8_inputs_calib -> Bonsai.const (Form.return ())
@@ -144,6 +146,7 @@ let get_name_and_model v =
   let name = Base.String.lowercase (Sexp.to_string (V.sexp_of_t v)) in
   let parts = String.split name ~on:'_' in
   let model = List.hd_exn parts in
+  let model = Stringext.replace_all model ~pattern:"dot" ~with_:"." in
   let filename = String.concat ~sep:"_" (List.tl_exn parts) in
   model, filename, List.tl_exn parts
 ;;
@@ -198,11 +201,11 @@ let handle_v_change inject = function
     fetch_spec ~transform:(transform_boxplot_spec "opt1.3b") inject "opt_boxplot"
   | V.Opt2b_boxplot ->
     fetch_spec ~transform:(transform_boxplot_spec "opt2.7b") inject "opt_boxplot"
-  | (V.Opt125m_fp8_inputs_hist | V.Opt125m_fp8_outputs_hist | V.Opt125m_fp8_weights_hist) as v ->
-    fetch_spec
-      ~transform:(transform_hist_spec v)
-      inject
-      "histogram_comp"
+  | ( V.Opt125m_fp8_inputs_hist
+    | V.Opt125m_fp8_outputs_hist
+    | V.Opt125m_fp8_weights_hist
+    | V.Opt6dot7b_fp8_inputs_hist ) as v ->
+    fetch_spec ~transform:(transform_hist_spec v) inject "histogram_comp"
   | V.Opt125m_fp8_inputs_calib ->
     fetch_spec
       ~transform:(transform_quant_spec V.Opt125m_fp8_inputs_calib)
