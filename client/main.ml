@@ -48,18 +48,34 @@ module Action = struct
   [@@deriving sexp_of]
 end
 
+let vega_div = "#viz"
+let vega_obj_key = "VEGA_DEBUG"
+  
 let handle_spec_change s =
   let json_spec =
     Js.Unsafe.fun_call
       (Js.Unsafe.js_expr "JSON.parse")
       [| Js.Unsafe.inject (Js.string s) |]
   in
-  let _ =
-    Js.Unsafe.fun_call
-      (Js.Unsafe.js_expr "vegaEmbed")
-      [| Js.Unsafe.inject (Js.string "#viz"); json_spec |]
+  (* let vega = Jv.find Jv.global "vega" |> Option.value_exn in *)
+  (* let level = Jv.find vega "Debug" |> Option.value_exn in *)
+  let vega_embed_opts = Jv.obj [| "renderer", Jv.of_string "svg" |] in
+  let vpromise =
+    Jv.call Jv.global "vegaEmbed" [| Jv.of_string vega_div; json_spec; vega_embed_opts |]
   in
-  ()
+  let attach_to_global view = Jv.set Jv.global vega_obj_key view in
+  (* Fut.of_promise ~ok:attach_to_global vpromise |> await Result.get_ok; *)
+  let fut_or_err =
+    Fut.of_promise'
+      ~ok:(fun a ->
+          Brr.Console.(log [ str "vega_loaded"; a ]);
+          attach_to_global a;
+        a)
+      ~error:(fun e -> Brr.Console.(log [ e ]))
+      vpromise
+  in
+  (* Fut.await fut_or_err (fun a -> Brr.Console.(log [ str "await complete"; a ])) *)
+  Fut.await fut_or_err (Fn.ignore)
 ;;
 
 let fetch_spec ?transform inject s =
