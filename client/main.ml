@@ -35,6 +35,8 @@ module V = struct
     | Opt125m_vsq_layer_variables_calib
     | Opt125m_vsq_inputs_calib
     | Opt6dot7b_fp8_inputs_hist
+    | Opt6dot7b_fp8_weights_hist
+    | Opt6dot7b_fp8_outputs_hist
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -50,7 +52,7 @@ end
 
 let vega_div = "#viz"
 let vega_obj_key = "VEGA_DEBUG"
-  
+
 let handle_spec_change s =
   let json_spec =
     Js.Unsafe.fun_call
@@ -68,14 +70,14 @@ let handle_spec_change s =
   let fut_or_err =
     Fut.of_promise'
       ~ok:(fun a ->
-          Brr.Console.(log [ str "vega_loaded"; a ]);
-          attach_to_global a;
+        Brr.Console.(log [ str "vega_loaded"; a ]);
+        attach_to_global a;
         a)
       ~error:(fun e -> Brr.Console.(log [ e ]))
       vpromise
   in
   (* Fut.await fut_or_err (fun a -> Brr.Console.(log [ str "await complete"; a ])) *)
-  Fut.await fut_or_err (Fn.ignore)
+  Fut.await fut_or_err Fn.ignore
 ;;
 
 let fetch_spec ?transform inject s =
@@ -129,6 +131,8 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
         | Opt125m_fp8_weights_hist -> Bonsai.const (Form.return ())
         | Opt125m_fp8_outputs_hist -> Bonsai.const (Form.return ())
         | Opt6dot7b_fp8_inputs_hist -> Bonsai.const (Form.return ())
+        | Opt6dot7b_fp8_weights_hist -> Bonsai.const (Form.return ())
+        | Opt6dot7b_fp8_outputs_hist -> Bonsai.const (Form.return ())
         (* | Opt125m_fp8_layer_variables_hist -> Bonsai.const (Form.return ()) *)
         | Opt125m_fp8_layer_variables_calib -> Bonsai.const (Form.return ())
         | Opt125m_fp8_inputs_calib -> Bonsai.const (Form.return ())
@@ -220,7 +224,9 @@ let handle_v_change inject = function
   | ( V.Opt125m_fp8_inputs_hist
     | V.Opt125m_fp8_outputs_hist
     | V.Opt125m_fp8_weights_hist
-    | V.Opt6dot7b_fp8_inputs_hist ) as v ->
+    | V.Opt6dot7b_fp8_inputs_hist
+    | V.Opt6dot7b_fp8_weights_hist
+    | V.Opt6dot7b_fp8_outputs_hist ) as v ->
     fetch_spec ~transform:(transform_hist_spec v) inject "histogram_comp"
   | V.Opt125m_fp8_inputs_calib ->
     fetch_spec
