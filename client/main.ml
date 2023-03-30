@@ -37,6 +37,9 @@ module V = struct
     | Opt6dot7b_fp8_inputs_hist
     | Opt6dot7b_fp8_weights_hist
     | Opt6dot7b_fp8_outputs_hist
+    | Maskformer_fp8_inputs_hist
+    | Maskformer_fp8_outputs_hist
+    | Maskformer_fp8_weights_hist
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -133,6 +136,9 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
         | Opt6dot7b_fp8_inputs_hist -> Bonsai.const (Form.return ())
         | Opt6dot7b_fp8_weights_hist -> Bonsai.const (Form.return ())
         | Opt6dot7b_fp8_outputs_hist -> Bonsai.const (Form.return ())
+        | Maskformer_fp8_weights_hist -> Bonsai.const (Form.return ())
+        | Maskformer_fp8_inputs_hist -> Bonsai.const (Form.return ())
+        | Maskformer_fp8_outputs_hist -> Bonsai.const (Form.return ())
         (* | Opt125m_fp8_layer_variables_hist -> Bonsai.const (Form.return ()) *)
         | Opt125m_fp8_layer_variables_calib -> Bonsai.const (Form.return ())
         | Opt125m_fp8_inputs_calib -> Bonsai.const (Form.return ())
@@ -226,7 +232,7 @@ let handle_v_change inject = function
     | V.Opt125m_fp8_weights_hist
     | V.Opt6dot7b_fp8_inputs_hist
     | V.Opt6dot7b_fp8_weights_hist
-    | V.Opt6dot7b_fp8_outputs_hist ) as v ->
+    | V.Opt6dot7b_fp8_outputs_hist | V.Maskformer_fp8_inputs_hist | V.Maskformer_fp8_outputs_hist | V.Maskformer_fp8_weights_hist) as v ->
     fetch_spec ~transform:(transform_hist_spec v) inject "histogram_comp"
   | V.Opt125m_fp8_inputs_calib ->
     fetch_spec
