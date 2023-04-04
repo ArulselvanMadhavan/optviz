@@ -19,14 +19,9 @@ end
 
 module V = struct
   type t =
-    | Opt125m_output_range
-    | Opt_all_output_range
-    | Opt125m_heatmap_sensitive_layers of string list
-    | Opt_channel_max
-    | Opt125m_boxplot
-    | Opt350m_boxplot
-    | Opt1b_boxplot
-    | Opt2b_boxplot
+    | Hrnetv2_fp8_inputs_hist
+    | Hrnetv2_fp8_weights_hist
+    | Hrnetv2_fp8_outputs_hist
     | Opt125m_fp8_inputs_hist
     | Opt125m_fp8_weights_hist
     | Opt125m_fp8_outputs_hist
@@ -45,7 +40,15 @@ module V = struct
     | Vitlarge32_fp8_outputs_hist
     | Vitlarge16_fp8_inputs_hist
     | Vitlarge16_fp8_weights_hist
-    | Vitlarge16_fp8_outputs_hist
+    | Vitlarge16_fp8_outputs_hist    
+    | Opt125m_output_range
+    | Opt_all_output_range
+    | Opt125m_heatmap_sensitive_layers of string list
+    | Opt_channel_max
+    | Opt125m_boxplot
+    | Opt350m_boxplot
+    | Opt1b_boxplot
+    | Opt2b_boxplot
   [@@deriving typed_variants, sexp, equal]
 end
 
