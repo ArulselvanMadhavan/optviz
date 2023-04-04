@@ -159,6 +159,9 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
         | Opt125m_fp8_inputs_calib -> Bonsai.const (Form.return ())
         | Opt125m_vsq_layer_variables_calib -> Bonsai.const (Form.return ())
         | Opt125m_vsq_inputs_calib -> Bonsai.const (Form.return ())
+        | Hrnetv2_fp8_inputs_hist -> Bonsai.const (Form.return ())
+        | Hrnetv2_fp8_weights_hist -> Bonsai.const (Form.return ())
+        | Hrnetv2_fp8_outputs_hist -> Bonsai.const (Form.return ())
       ;;
     end)
 ;;
@@ -256,6 +259,9 @@ let handle_v_change inject = function
     | V.Vitlarge32_fp8_weights_hist
     | V.Vitlarge16_fp8_inputs_hist
     | V.Vitlarge16_fp8_outputs_hist
+    | V.Hrnetv2_fp8_inputs_hist
+    | V.Hrnetv2_fp8_outputs_hist
+    | V.Hrnetv2_fp8_weights_hist
     | V.Vitlarge16_fp8_weights_hist ) as v ->
     fetch_spec ~transform:(transform_hist_spec v) inject "histogram_comp"
   | V.Opt125m_fp8_inputs_calib ->
