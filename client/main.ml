@@ -52,6 +52,9 @@ module V = struct
     | Pointcloudtransformer_fp8_inputs_hist
     | Pointcloudtransformer_fp8_weights_hist
     | Pointcloudtransformer_fp8_outputs_hist
+    | Codegen6dot7b_fp8_inputs_hist
+    | Codegen6dot7b_fp8_weights_hist
+    | Codegen6dot7b_fp8_outputs_hist
   [@@deriving typed_variants, sexp, equal]
 end
 
@@ -168,6 +171,9 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
         | Pointcloudtransformer_fp8_inputs_hist -> Bonsai.const (Form.return ())
         | Pointcloudtransformer_fp8_weights_hist -> Bonsai.const (Form.return ())
         | Pointcloudtransformer_fp8_outputs_hist -> Bonsai.const (Form.return ())
+        | Codegen6dot7b_fp8_inputs_hist -> Bonsai.const (Form.return ())
+        | Codegen6dot7b_fp8_weights_hist -> Bonsai.const (Form.return ())
+        | Codegen6dot7b_fp8_outputs_hist -> Bonsai.const (Form.return ())
       ;;
     end)
 ;;
@@ -272,6 +278,9 @@ let handle_v_change inject = function
     | V.Pointcloudtransformer_fp8_inputs_hist
     | V.Pointcloudtransformer_fp8_weights_hist
     | V.Pointcloudtransformer_fp8_outputs_hist
+    | V.Codegen6dot7b_fp8_inputs_hist
+    | V.Codegen6dot7b_fp8_weights_hist
+    | V.Codegen6dot7b_fp8_outputs_hist
     ) as v ->
     fetch_spec ~transform:(transform_hist_spec v) inject "histogram_comp"
   | V.Opt125m_fp8_inputs_calib ->
