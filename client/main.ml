@@ -12,13 +12,14 @@ module M = struct
     ; images : string list
     ; show_images : bool
     }
-  [@@deriving sexp, equal]
+  [@@deriving sexp, equal, fields]
 
   let default = { error = None; spec = None; images = []; show_images = false }
 end
 
 module V = struct
-  type t =    
+  type t =
+    | Quantization of Quant_view.t
     | Opt125m_output_range
     | Opt_all_output_range
     | Opt125m_heatmap_sensitive_layers of string list
@@ -118,6 +119,25 @@ let fetch_spec ?transform inject s =
     inject (Action.Spec (Some spec)))
 ;;
 
+let build_quant_view =
+  (*   let open Bonsai.Let_syntax in *)
+  Quant_view.form_of_v
+;;
+
+(*   (\* let btn = Form.Submit.create ~handle_enter:false ~f:(Quant_view.handle_update) () in *\) *)
+(*   (\* let%sub () = *\) *)
+(*   (\*   Form.Dynamic.on_change *\) *)
+(*   (\*     (module Quant_view) *\) *)
+(*   (\*     ~f:(Value.return Quant_view.handle_update) *\) *)
+(*   (\*     qv *\) *)
+(*   (\* in *\) *)
+(*   let%arr qv = qv in *)
+(*   qv *)
+
+(* let%arr list_form = list_form in *)
+(* let vdtom = (Form.view_as_vdom btn) in *)
+(* Form.group'  list_form *)
+
 let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Computation.t =
   Form.Typed.Variant.make
     (module struct
@@ -180,6 +200,7 @@ let form_of_v (_inject : (Action.t -> unit Effect.t) Value.t) : V.t Form.t Compu
         | Codegen2dot7b_fp8_inputs_hist -> Bonsai.const (Form.return ())
         | Codegen2dot7b_fp8_weights_hist -> Bonsai.const (Form.return ())
         | Codegen2dot7b_fp8_outputs_hist -> Bonsai.const (Form.return ())
+        | Quantization -> build_quant_view
       ;;
     end)
 ;;
@@ -245,78 +266,97 @@ let transform_quant_spec v spec =
   spec
 ;;
 
-let handle_v_change inject = function
-  | V.Opt125m_output_range -> fetch_spec_for_v inject V.Opt125m_output_range
-  | V.Opt_all_output_range -> fetch_spec_for_v inject V.Opt_all_output_range
-  | V.Opt125m_heatmap_sensitive_layers selected ->
-    handle_spec_change "{}";
-    inject (Images selected)
-  | V.Opt_channel_max -> fetch_spec_for_v inject V.Opt_channel_max
-  | V.Opt125m_boxplot ->
-    fetch_spec
-      ~transform:(transform_boxplot_spec "opt125m")
-      inject
-      "opt_boxplot" (* Download the generic recipe *)
-  | V.Opt350m_boxplot ->
-    fetch_spec ~transform:(transform_boxplot_spec "opt350m") inject "opt_boxplot"
-  | V.Opt1b_boxplot ->
-    fetch_spec ~transform:(transform_boxplot_spec "opt1.3b") inject "opt_boxplot"
-  | V.Opt2b_boxplot ->
-    fetch_spec ~transform:(transform_boxplot_spec "opt2.7b") inject "opt_boxplot"
-  | ( V.Opt125m_fp8_inputs_hist
-    | V.Opt125m_fp8_outputs_hist
-    | V.Opt125m_fp8_weights_hist
-    | V.Opt6dot7b_fp8_inputs_hist
-    | V.Opt6dot7b_fp8_weights_hist
-    | V.Opt6dot7b_fp8_outputs_hist
-    | V.Maskformer_fp8_inputs_hist
-    | V.Maskformer_fp8_outputs_hist
-    | V.Maskformer_fp8_weights_hist
-    | V.Vitlarge32_fp8_inputs_hist
-    | V.Vitlarge32_fp8_outputs_hist
-    | V.Vitlarge32_fp8_weights_hist
-    | V.Vitlarge16_fp8_inputs_hist
-    | V.Vitlarge16_fp8_outputs_hist
-    | V.Hrnetv2_fp8_inputs_hist
-    | V.Hrnetv2_fp8_outputs_hist
-    | V.Hrnetv2_fp8_weights_hist
-    | V.Vitlarge16_fp8_weights_hist
-    | V.Pointcloudtransformer_fp8_inputs_hist
-    | V.Pointcloudtransformer_fp8_weights_hist
-    | V.Pointcloudtransformer_fp8_outputs_hist
-    | V.Codegen6dot7b_fp8_inputs_hist
-    | V.Codegen6dot7b_fp8_weights_hist
-    | V.Codegen6dot7b_fp8_outputs_hist
-    | V.Codegen2dot7b_fp8_inputs_hist
-    | V.Codegen2dot7b_fp8_outputs_hist
-    | V.Codegen2dot7b_fp8_weights_hist
-    ) as v ->
-    fetch_spec ~transform:(transform_hist_spec v) inject "histogram_comp"
-  | V.Opt125m_fp8_inputs_calib ->
-    fetch_spec
-      ~transform:(transform_quant_spec V.Opt125m_fp8_inputs_calib)
-      inject
-      "quant_error"
-  | V.Opt125m_fp8_layer_variables_calib ->
-    fetch_spec
-      ~transform:(transform_quant_spec V.Opt125m_fp8_layer_variables_calib)
-      inject
-      "quant_error"
-  | V.Opt125m_vsq_inputs_calib ->
-    fetch_spec
-      ~transform:(transform_quant_spec V.Opt125m_vsq_inputs_calib)
-      inject
-      "quant_error"
-  | V.Opt125m_vsq_layer_variables_calib ->
-    Stdio.print_string "vsq save";
-    Stdio.Out_channel.flush Stdio.stdout;
-    fetch_spec
-      ~transform:(transform_quant_spec V.Opt125m_vsq_layer_variables_calib)
-      inject
-      "quant_error"
+let handle_v_change inject v _ =
+  match v with
+  | Ok v ->
+    (match v with
+     | V.Opt125m_output_range -> fetch_spec_for_v inject V.Opt125m_output_range
+     | V.Opt_all_output_range -> fetch_spec_for_v inject V.Opt_all_output_range
+     | V.Opt125m_heatmap_sensitive_layers selected ->
+       handle_spec_change "{}";
+       inject (Images selected)
+     | V.Opt_channel_max -> fetch_spec_for_v inject V.Opt_channel_max
+     | V.Opt125m_boxplot ->
+       fetch_spec
+         ~transform:(transform_boxplot_spec "opt125m")
+         inject
+         "opt_boxplot" (* Download the generic recipe *)
+     | V.Opt350m_boxplot ->
+       fetch_spec ~transform:(transform_boxplot_spec "opt350m") inject "opt_boxplot"
+     | V.Opt1b_boxplot ->
+       fetch_spec ~transform:(transform_boxplot_spec "opt1.3b") inject "opt_boxplot"
+     | V.Opt2b_boxplot ->
+       fetch_spec ~transform:(transform_boxplot_spec "opt2.7b") inject "opt_boxplot"
+     | ( V.Opt125m_fp8_inputs_hist
+       | V.Opt125m_fp8_outputs_hist
+       | V.Opt125m_fp8_weights_hist
+       | V.Opt6dot7b_fp8_inputs_hist
+       | V.Opt6dot7b_fp8_weights_hist
+       | V.Opt6dot7b_fp8_outputs_hist
+       | V.Maskformer_fp8_inputs_hist
+       | V.Maskformer_fp8_outputs_hist
+       | V.Maskformer_fp8_weights_hist
+       | V.Vitlarge32_fp8_inputs_hist
+       | V.Vitlarge32_fp8_outputs_hist
+       | V.Vitlarge32_fp8_weights_hist
+       | V.Vitlarge16_fp8_inputs_hist
+       | V.Vitlarge16_fp8_outputs_hist
+       | V.Hrnetv2_fp8_inputs_hist
+       | V.Hrnetv2_fp8_outputs_hist
+       | V.Hrnetv2_fp8_weights_hist
+       | V.Vitlarge16_fp8_weights_hist
+       | V.Pointcloudtransformer_fp8_inputs_hist
+       | V.Pointcloudtransformer_fp8_weights_hist
+       | V.Pointcloudtransformer_fp8_outputs_hist
+       | V.Codegen6dot7b_fp8_inputs_hist
+       | V.Codegen6dot7b_fp8_weights_hist
+       | V.Codegen6dot7b_fp8_outputs_hist
+       | V.Codegen2dot7b_fp8_inputs_hist
+       | V.Codegen2dot7b_fp8_outputs_hist
+       | V.Codegen2dot7b_fp8_weights_hist ) as v ->
+       fetch_spec ~transform:(transform_hist_spec v) inject "histogram_comp"
+     | V.Opt125m_fp8_inputs_calib ->
+       fetch_spec
+         ~transform:(transform_quant_spec V.Opt125m_fp8_inputs_calib)
+         inject
+         "quant_error"
+     | V.Opt125m_fp8_layer_variables_calib ->
+       fetch_spec
+         ~transform:(transform_quant_spec V.Opt125m_fp8_layer_variables_calib)
+         inject
+         "quant_error"
+     | V.Opt125m_vsq_inputs_calib ->
+       fetch_spec
+         ~transform:(transform_quant_spec V.Opt125m_vsq_inputs_calib)
+         inject
+         "quant_error"
+     | V.Opt125m_vsq_layer_variables_calib ->
+       Stdio.print_string "vsq save";
+       Stdio.Out_channel.flush Stdio.stdout;
+       fetch_spec
+         ~transform:(transform_quant_spec V.Opt125m_vsq_layer_variables_calib)
+         inject
+         "quant_error"
+     | V.Quantization _xs -> fetch_spec inject "quant_diff_full")
+  | _ -> Effect.Ignore
 ;;
 
 let build_image_path layer_name = "data/opt125m/heatmap/images/" ^ layer_name ^ ".png"
+
+(* let submit_for_v = function *)
+(*   | V.Quantization xs -> Form.Submit.create ~f:()
+*)
+
+let add_submit v =
+  let ok_val = Core.Or_error.ok v in
+  match ok_val with
+  | Some (V.Quantization xs) ->
+    let on_click_attr = Vdom.Attr.on_click (fun _ -> Quant_view.handle_update xs) in
+    let title_attr = Vdom.Attr.title "update" in
+    let attr = Vdom.Attr.(on_click_attr @ title_attr) in
+    Vdom.Node.button ~key:"submit" ~attr [ Vdom.Node.Text "Update Viz" ]
+  | _ -> Vdom.Node.none
+;;
 
 let view_of_form : Vdom.Node.t Computation.t =
   let open! Bonsai.Let_syntax in
@@ -333,16 +373,23 @@ let view_of_form : Vdom.Node.t Computation.t =
         | Error e -> { model with error = e; show_images = false })
   in
   let%sub form_v = form_of_v inject in
-  let%sub () =
-    Form.Dynamic.on_change
-      (module V)
-      form_v
-      ~f:(Value.map inject ~f:(fun inject -> handle_v_change inject))
-  in
+  (* let%sub () = *)
+  (*   Form.Dynamic.on_change *)
+  (*     (module V) *)
+  (*     form_v *)
+  (*     ~f:(Value.map inject ~f:(fun inject -> handle_v_change inject)) *)
+  (* in *)
   let%arr form_v = form_v
-  and state = state in
-  (* and inject = inject in *)
+  and state = state
+  and inject = inject in
   let value = Form.value form_v in
+  let viz_visible = M.spec state |> Option.is_some in
+  let viz_btn_text = if viz_visible then "Switch Viz" else "Show Viz" in
+  let viz_btn =
+    Vdom.Node.button
+      ~attr:(Vdom.Attr.on_click (handle_v_change inject value))
+      [ Vdom.Node.Text viz_btn_text ]
+  in
   let images =
     if state.show_images
     then
@@ -357,7 +404,8 @@ let view_of_form : Vdom.Node.t Computation.t =
     ([ Form.view_as_vdom form_v
      ; Vdom.Node.text "internal state for debugging:"
      ; Vdom.Node.sexp_for_debugging ([%sexp_of: V.t Or_error.t] value)
-       (* ; Vdom.Node.text (Sexp.to_string (M.sexp_of_t state)) *)
+     ; add_submit value (* ; Vdom.Node.text (Sexp.to_string (M.sexp_of_t state)) *)
+     ; viz_btn
      ]
     @ images)
 ;;
