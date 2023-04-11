@@ -34,4 +34,5 @@ WORKDIR ${HOME}
 
 RUN opam init -a -y -c ${OCAML_COMPILER} --disable-sandboxing
 RUN opam install -y merlin dune utop bonsai cohttp-lwt-unix conduit-lwt cohttp-async async_kernel async_js brr
+RUN opam install integers_stubs_js
 WORKDIR ${HOME}/optviz
